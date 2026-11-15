@@ -18,7 +18,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python scripts/fetch_news.py
+      - name: Check collector syntax
+        run: python -m py_compile scripts/fetch_news.py
+      - name: Fetch news
+        run: python scripts/fetch_news.py
+      - name: Validate feed
+        run: |
+          python -c "import json; d=json.load(open('data/news.json')); assert isinstance(d.get('articles'),list); assert len(d['articles'])>0; print(len(d['articles']), 'articles validated')"
       - name: Commit updated feed
         run: |
           git config user.name "github-actions[bot]"
