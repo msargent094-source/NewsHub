@@ -3,6 +3,7 @@
 import datetime as dt
 import email.utils
 import hashlib
+import html
 import json
 import pathlib
 import re
@@ -50,6 +51,12 @@ def image_for(item):
             kind = element.get("type", "")
             if url.startswith("https://") and (tag != "enclosure" or kind.startswith("image/")):
                 return url
+    description = html.unescape(item.findtext("description") or "")
+    for match in re.finditer(r'<img\\b[^>]*\\bsrc=["\\'](https://[^"\\']+)["\\']', description, re.I):
+        candidate = html.unescape(match.group(1))
+        host = urllib.parse.urlsplit(candidate).hostname or ""
+        if host and not host.endswith("google.com") and not host.endswith("gstatic.com"):
+            return candidate
     return None
 
 def add_story(stories, item, name, category):
@@ -104,7 +111,7 @@ def main():
                     if add_story(stories,item,name,category): count+=1
             except Exception as exc:
                 warnings.append(f"{name} / {category}: {type(exc).__name__}: {exc}")
-        if name == "The Guardian Australia" and count == 0:
+        if name == "The Guardian Australia":
             try:
                 root = ET.fromstring(fetch(GUARDIAN_RSS))
                 for item in root.findall(".//item")[:80]:
@@ -116,6 +123,11 @@ def main():
         for a in old:
             if a.get("id"): stories[a["id"]]=a
         warnings.append("No new results; retained last published articles")
+    # Preserve previously discovered images for articles with stable IDs.
+    previous = {a.get("id"): a for a in old}
+    for ident, article in stories.items():
+        if not article.get("image") and previous.get(ident, {}).get("image"):
+            article["image"] = previous[ident]["image"]
     entries=sorted(stories.values(),key=lambda x:x["published"],reverse=True)[:600]
     OUT.parent.mkdir(parents=True,exist_ok=True)
     OUT.write_text(json.dumps({"updatedAt":dt.datetime.now(dt.timezone.utc).isoformat(),"articles":entries,"warnings":warnings},ensure_ascii=False,indent=2)+"\n")
