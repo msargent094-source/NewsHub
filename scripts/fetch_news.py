@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 SOURCES = {
     "ABC News": "abc.net.au",
     "SBS News": "sbs.com.au",
-    "The Guardian Australia": "theguardian.com/au",
+    "The Guardian Australia": "theguardian.com",
     "Reuters": "reuters.com",
     "BBC News": "bbc.com/news",
     "Al Jazeera": "aljazeera.com",
@@ -63,7 +63,7 @@ def main():
                     date=item.findtext("pubDate") or ""
                     try: published=email.utils.parsedate_to_datetime(date).astimezone(dt.timezone.utc).isoformat()
                     except (TypeError,ValueError): published=dt.datetime.now(dt.timezone.utc).isoformat()
-                    ident=hashlib.sha256((name+"|"+title.lower()).encode()).hexdigest()[:20]
+                    normalized=re.sub(r"[^a-z0-9]+"," ",re.sub(r"\\s+[-|]\\s+[^-|]{2,90}$","",title.lower())).strip()\n                    ident=hashlib.sha256((name+"|"+normalized).encode()).hexdigest()[:20]
                     stories.setdefault(ident,{"id":ident,"title":title,"url":link,"source":name,"category":category,"published":published})
                     count+=1
             except Exception as exc:
