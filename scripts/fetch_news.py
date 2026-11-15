@@ -63,7 +63,8 @@ def main():
                     date=item.findtext("pubDate") or ""
                     try: published=email.utils.parsedate_to_datetime(date).astimezone(dt.timezone.utc).isoformat()
                     except (TypeError,ValueError): published=dt.datetime.now(dt.timezone.utc).isoformat()
-                    normalized=re.sub(r"[^a-z0-9]+"," ",re.sub(r"\\s+[-|]\\s+[^-|]{2,90}$","",title.lower())).strip()\n                    ident=hashlib.sha256((name+"|"+normalized).encode()).hexdigest()[:20]
+                    normalized=re.sub(r"[^a-z0-9]+"," ",re.sub(r"\\s+[-|]\\s+[^-|]{2,90}$","",title.lower())).strip()
+                    ident=hashlib.sha256((name+"|"+normalized).encode()).hexdigest()[:20]
                     stories.setdefault(ident,{"id":ident,"title":title,"url":link,"source":name,"category":category,"published":published})
                     count+=1
             except Exception as exc:
